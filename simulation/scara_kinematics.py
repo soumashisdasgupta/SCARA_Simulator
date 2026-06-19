@@ -27,7 +27,7 @@ Modes (CLI)
 Link lengths:  L1 = 300 mm  |  L2 = 200 mm
 Workspace   :  100 mm (inner dead-zone) – 500 mm (outer reach)
 
-Author : SCARA-PnP Project — Phase 1
+Author : Soumashis Dasgupta
 """
 
 from __future__ import annotations
