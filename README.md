@@ -150,7 +150,7 @@ The main window is split into a **sidebar control panel** and a **live arm plot*
 │  [ PLACE ]           │                                         │
 │                      │                                         │
 │  Live Info Panel     │                                         │
-│  θ₁, θ₂, FK error   │                                         │
+│  θ₁, θ₂, FK error    │                                         │
 │                      │                                         │
 │  [ Reset ]           │                                         │
 └──────────────────────┴─────────────────────────────────────────┘
@@ -247,7 +247,7 @@ joints:
 ## Dependencies
 
 | Package | Version | Purpose |
-|---|---|---|
+
 | `numpy` | ≥ 1.24 | Array math, trig |
 | `matplotlib` | ≥ 3.7 | GUI, animation, plots |
 | `PyYAML` | ≥ 6.0 | Config file parsing |
