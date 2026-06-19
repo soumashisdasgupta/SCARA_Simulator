@@ -1,0 +1,13 @@
+numpy>=1.24.0
+matplotlib>=3.7.0
+PyYAML>=6.0
+scipy>=1.11.0
+
+# Vision pipeline (Phase 2 — uncomment when needed)
+# opencv-python>=4.8.0
+
+# Hardware communication (Phase 2 — MCU-specific)
+# pyserial>=3.5
+# smbus2>=0.4.2
+# spidev>=3.6
+# RPi.GPIO>=0.7.1

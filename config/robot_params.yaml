@@ -1,0 +1,31 @@
+robot:
+  name: "SCARA-PnP-Mk1"
+  dof: 4
+
+links:
+  L1: 300.0   # Upper-arm (shoulder → elbow), mm
+  L2: 200.0   # Forearm   (elbow → end-effector), mm
+
+workspace:
+  outer_radius_mm: 500.0
+  inner_radius_mm: 100.0
+
+joints:
+  theta1: { min_deg: -150.0, max_deg: 150.0, home_deg: 0.0 }
+  theta2: { min_deg: -150.0, max_deg: 150.0, home_deg: 0.0 }
+  z_axis: { stroke_mm: 100.0, home_mm: 0.0, pick_mm: 100.0, feed_rate_mm_per_s: 50.0 }
+  yaw:    { min_deg: -180.0, max_deg: 180.0, home_deg: 0.0 }
+
+end_effector:
+  type: "suction_cup"
+  actuator: "pneumatic"
+
+motion:
+  profile: "s_curve"
+  max_joint_speed_deg_per_s: 120.0
+  max_joint_accel_deg_per_s2: 240.0
+
+mcu:
+  platform: "TBD"
+  comms_interface: "TBD"
+  baud_rate: 115200
