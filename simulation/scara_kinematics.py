@@ -13,19 +13,11 @@ Sidebar controls
     · Fx / Fy text boxes — type the target destination coordinates
 
   PLACE button — animates the arm smoothly from Initial → Final,
-                 then shows "Done!  Enter new targets."
 
   Reset button — clears both positions back to defaults
 
-Modes (CLI)
------------
-  python simulation/scara_kinematics.py               # pick-and-place UI
-  python simulation/scara_kinematics.py --ix 300 --iy 0 --fx 0 --fy 350
-  python simulation/scara_kinematics.py --demo-grid   # static IK grid
-  python simulation/scara_kinematics.py --workspace   # workspace heatmap
-
 Link lengths:  L1 = 300 mm  |  L2 = 200 mm
-Workspace   :  100 mm (inner dead-zone) – 500 mm (outer reach)
+Workspace   :  100 mm (inner dead-zone) - 500 mm (outer reach)
 
 Author : Soumashis Dasgupta
 """
@@ -76,7 +68,7 @@ COLOR_INIT  = "#58a6ff"   # initial-arm blue
 COLOR_FINAL = "#3fb950"   # final-arm green (used for ghost)
 COLOR_TGT_I = "#58a6ff"   # initial pos marker
 COLOR_TGT_F = "#e3b341"   # final pos marker (gold)
-COLOR_BASE  = "#e3b341"   # shoulder
+COLOR_BASE  = "#f85149"   # shoulder / base (red)
 COLOR_ANIM  = "#a5d6ff"   # arm during animation (lighter blue)
 COLOR_TEXT  = "#c9d1d9"
 COLOR_DIM   = "#484f58"
@@ -303,6 +295,8 @@ class ScaraPickPlaceViz:
         self._arm_artists:    list = []   # initial-position arm
         self._ghost_artists:  list = []   # final-position ghost arm
         self._marker_artists: list = []   # crosshair markers
+        self._anim_artists:   list = []   # artists drawn during animation (cleared on done)
+        self._visited_dots:   list = []   # persistent green dots at past final coords
         self._overlay_artist: Optional[plt.Text] = None  # Done / Error banner
         self._anim: Optional[FuncAnimation] = None
         self._animating: bool = False
@@ -407,11 +401,10 @@ class ScaraPickPlaceViz:
         )
         self.ax_sb.text(
             0.5, 0.935,
-            f"L1 = {arm.L1:.0f} mm   |   L2 = {arm.L2:.0f} mm\n"
-            f"Workspace: {arm.inner_radius:.0f} – {arm.outer_radius:.0f} mm",
+            f"L1 = {arm.L1:.0f} mm   |   L2 = {arm.L2:.0f} mm",
             transform=self.ax_sb.transAxes,
             ha="center", va="top",
-            fontsize=8, color=COLOR_DIM, linespacing=1.6,
+            fontsize=8, color=COLOR_DIM,
         )
         self._divider(0.900)
 
@@ -525,7 +518,8 @@ class ScaraPickPlaceViz:
             mpatches.Patch(facecolor=COLOR_INIT,  label="Initial position  (blue)"),
             mpatches.Patch(facecolor=COLOR_TGT_F, label="Final target        (gold)"),
             mpatches.Patch(facecolor=COLOR_FINAL, label="Final arm ghost  (green)"),
-            mpatches.Patch(facecolor=COLOR_BASE,  label="Base / Shoulder"),
+            mpatches.Patch(facecolor=COLOR_FINAL, label="Past final points   (dot)"),
+            mpatches.Patch(facecolor=COLOR_BASE,  label="Base / Shoulder   (red)"),
         ]
         ax.legend(handles=legend_els, loc="lower right",
                   facecolor="#161b22", edgecolor="#30363d",
@@ -561,6 +555,7 @@ class ScaraPickPlaceViz:
         """Recompute IK for both positions and refresh all dynamic artists."""
         if self._animating:
             return
+        self._clear("_anim_artists")   # safety: remove any leftover animation frame
         self._clear_overlay()
         self._draw_initial_arm()
         self._draw_final_ghost()
@@ -727,12 +722,32 @@ class ScaraPickPlaceViz:
         )
         self.fig.canvas.draw_idle()
 
+    def _draw_visited_dot(self, x: float, y: float) -> None:
+        """Drop a small persistent green dot at (x, y) to mark a past final point."""
+        dot = plt.Circle(
+            (x, y), JOINT_RADIUS * 0.6,
+            color=COLOR_FINAL, alpha=0.85, zorder=7,
+        )
+        self.ax_main.add_patch(dot)
+        self._visited_dots.append(dot)
+
     def _on_anim_done(self, final_sol: JointAngles) -> None:
         """Called after the last animation frame."""
         self._animating = False
 
-        # Restore ghost / markers hidden during anim
-        for a in self._ghost_artists + self._marker_artists:
+        # ── Critical: remove the final animation frame's arm lines ──────────
+        # The _update() closure draws new _anim_artists on every frame including
+        # the last one.  Without this clear they remain as solid green lines.
+        self._clear("_anim_artists")
+
+        # Remove the pre-animation ghost arm — replaced by a small dot
+        self._clear("_ghost_artists")
+
+        # Drop a persistent green dot at the completed final position
+        self._draw_visited_dot(self.final_x, self.final_y)
+
+        # Restore position markers (crosshairs) hidden during animation
+        for a in self._marker_artists:
             try:
                 a.set_visible(True)
             except Exception:
@@ -789,6 +804,9 @@ class ScaraPickPlaceViz:
     def _cb_reset(self, event) -> None:
         if self._animating:
             return
+        # Clear all transient and history artists on full reset
+        self._clear("_anim_artists")
+        self._clear("_visited_dots")
         self.init_x  = DEFAULT_INIT_X
         self.init_y  = DEFAULT_INIT_Y
         self.final_x = DEFAULT_FINAL_X
